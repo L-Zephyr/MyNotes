@@ -225,7 +225,6 @@ $ cd ./CallGraph
 $ clang-mapper ../AFNetworking --
 ```
 之后程序会自动分析`../AFNetworking`下的所有代码文件，并在CallGraph目录下生成对应的png文件：  
-<img src="./res/4.png"/>
 ![](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/clang_mapper/ef862a4410793adc464e372e5494535a.png)
 
 ### 命令行参数
