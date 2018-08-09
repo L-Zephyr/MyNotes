@@ -1,4 +1,3 @@
-#在iOS项目中自动生成函数调用关系图(CallGraph)
 在平时的开发中经常需要阅读学习其他人的代码，当开始阅读一份自己完全不熟悉的代码时，通常会遇到一些麻烦，因为我必须要先找到代码逻辑的入口点并沿着逻辑链路将其梳理一遍，一份代码文件通常会伴随着许多的方法调用，这一个阶段往往是比较痛苦的，因为我必须花上许多时间来将这些方法之间的关系理清楚，这样才能在我的大脑中生成一份逻辑关系图。如果我们能自动生成源码中的方法调用图(Call Graph)，那样一定会对源码阅读有很大的帮助。  
 
 我们需要一个能够自动生成源码方法调用图的工具，那么这个工具必须能够理解并分析我们的代码，而最能理解代码的当然就是编译器了。我们编译Objective-C的代码所用的前端是Clang，Clang提供了一系列的工具来帮助我们分析源码，我们可以基于Clang来构建自己的工具。在这之前简单介绍一些相关概念：
@@ -37,7 +36,8 @@ int main() {
           `-IntegerLiteral 0x7fa933841148 <col:22> 'int' 2
 ```
 
-###LibTooling和Clang Plugin
+### LibTooling和Clang Plugin
+
 `LibTooling`是一个库，提供了对AST的访问和修改的能力，`LibTooling`可以用来编写可独立运行的程序，如我们上面所使用的`clang-check`，`LibTooling`提供了一系列便捷的方法来访问语法树。  
 
 `Clang Plugin`与`LibTooling`类似，对AST有完全的控制权，但是不同的是`Clang Plugin`是作为插件注入到编译流程中的，并且可以嵌入xCode中。实际上使用`LibTooling`编写的独立工具只需要经过少许的改动就可以变成`Clang Plugin`来使用。
@@ -45,8 +45,10 @@ int main() {
 ##访问抽象语法树
 要获得函数之间的调用关系，我们必须分析AST，Clang提供了两种方法：`ASTMatchers`和`RecursiveASTVisitor`。
 
-###ASTMatchers
+### ASTMatchers
+
 `ASTMatchers`提供了一系列的函数，以DSL的方式编写匹配表达式来查找我们感兴趣的节点，并使用`bind`方法绑定到指定的名称上：
+
 ```c
 StatementMatcher matcher = callExpr(hasAncestor(functionDecl().bind("caller")), 
                                     callee(functionDecl().bind("callee")));
@@ -92,9 +94,11 @@ int main(int argv, const char **argv) {
 - **Narrowing Matchers**：顾名思义，这种Matcher提供了条件判断能力用来缩小匹配范围，如第二个例子中的`hasName`就是一个`Narrowing Matcher`，只匹配名称为"MyClass"的节点。
 - **Traversal Matchers**：以当前匹配的节点作为起点，用来限定匹配表达式查找的范围。如第一个例子中的`hasAncestor`，在当前节点的祖先节点中进行下一步的匹配。
 
-###RecursiveASTVisitor
+### RecursiveASTVisitor
+
 `RecursiveASTVisitor`是Clang提供的另一种访问AST的方式，使用起来很简单，你需要定义三个类，分别继承自`ASTFrontendAction`、`ASTConsumer`和`RecursiveASTVisitor`。  
 在自定义的MyFrontendAction中返回一个自定义的MyConsumer实例
+
 ```c++
 class MyFrontendAction : public clang::ASTFrontendAction {
 public:
@@ -130,7 +134,8 @@ public:
 Tool.run(newFrontendActionFactory<CallGraphAction>().get());
 ```
 
-##构建CallGraph工具
+## 构建CallGraph工具
+
 在Clang源码中的`Analysis`文件夹中提供了一个名为`CallGraph`的类，参考这份源码的实现编写了自己的CallGraph工具。其中核心部分主要为三个类：`CallGraph`、`CallGraphNode`和`CGBuilder`：
 
 - **CallGraph**：继承自`RecursiveASTVisitor`，实现`VisitFunctionDecl`和`VisitObjCMethodDecl`方法，遍历所有的C函数和Objective-C方法：
@@ -186,12 +191,14 @@ Tool.run(newFrontendActionFactory<CallGraphAction>().get());
 
 目前只实现了一个基础版本，支持C和Objecive-C，实现了最基本的功能，代码也比较简单，之后会继续优化并增加新的功能，所有代码已经托管到github上：https://github.com/L-Zephyr/clang-mapper 
 
-##使用
+## 使用
 
 可以下载并自行编译源码，或者直接使用release文件夹中预先编译好的二进制文件`clang-mapper`(使用Clang5.0.0编译)，由于采用了`Graphviz`来生成调用图，请确保在运行前已正确安装了`Graphviz`  
 
-###编译源码
+### 编译源码
+
 关于如何编译用LibTooling编写的工具，[Clang官方文档](https://clang.llvm.org/docs/LibASTMatchersTutorial.html)中有详细的说明
+
 1. 首先下载LLVM和Clang的源码。
 
 2. 将`clang-mapper`文件夹拷贝到`llvm/tools/clang/tools/`中。
@@ -207,8 +214,10 @@ Tool.run(newFrontendActionFactory<CallGraphAction>().get());
    ```
    也可以按照文档中介绍的使用Ninja来编译，编译过程过会生成20多个G的中间文件，编译结束后在`build/bin/`中就能找到`clang-mapper`文件了，将其拷贝到`/usr/local/bin`目录下
 
-###基本使用
+### 基本使用
+
 传入任意数量的文件或是文件夹，`clang-mapper`会自动处理所有文件并在当前执行命令的路径下生成函数的调用图，以代码文件的命名做区分。如下，我们用clang-mapper分析大名鼎鼎的AFNetworking的核心代码。我不希望将分析的生成的结果和源码文件混在一起，所以我创建了一个文件夹CallGraph并在该目录下调用
+
 ```
 $ cd ./AFNetworking-master
 $ mkdir CallGraph
@@ -219,8 +228,10 @@ $ clang-mapper ../AFNetworking --
 <img src="./res/4.png"/>
 ![](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/clang_mapper/ef862a4410793adc464e372e5494535a.png)
 
-###命令行参数
+### 命令行参数
+
 clang-mapper提供了一些可选的命令行参数
+
 - **-graph-only**：只生成调用图png文件，不保留dot文件，这个是默认选项
 - **-dot-only**：只生成dot文件，不生成png文件
 - **-dot-graph**：同时生成dot文件和png文件
