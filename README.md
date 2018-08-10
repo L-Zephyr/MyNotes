@@ -18,5 +18,7 @@
 
 - [Sourcery - Swift元编程实践，告别样板代码](https://github.com/L-Zephyr/MyNotes/blob/master/Blogs/Swift%E5%85%83%E7%BC%96%E7%A8%8B.md)
 
+- [谈谈RxSwift和状态管理](https://github.com/L-Zephyr/MyNotes/blob/master/Blogs/%E8%B0%88%E8%B0%88RxSwift%E5%92%8C%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86.md)
+
 ## 笔记
 
