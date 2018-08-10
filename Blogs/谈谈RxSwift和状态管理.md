@@ -84,7 +84,7 @@ extension NormalMessageViewController: UITableViewDataSource {
 
 为了构造单向数据流，Redux引入了一系列概念，这是Redux中所描述的数据流：
 
-![redux](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/RxSwift和状态管理/4b60993a35465dbb2a3abb29b6cf24c7.png)
+![redux](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/RxSwift和状态管理/4b60993a35465dbb2a3abb29b6cf24c8.png)
 
 其中的`State`就是应用的状态，也就是我们的Model部分，先不管这里的`Action`、`Reducer`等概念，从图中可以看到State和View是有着**直接**的绑定关系的，而View的事件则会通过`Action`、`Store`等一系列操作**间接**的改变`State`，下面来详细的介绍一下Redux的数据流的实现以及所涉及到的概念：
 
