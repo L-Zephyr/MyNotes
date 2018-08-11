@@ -2,7 +2,7 @@
 
 本文篇幅较长，主要围绕着状态管理这一话题进行介绍，前两个部分介绍了前端领域中React和Vue所采用的状态管理模式及其在Swift中的实现，最后介绍了另一种简化的状态管理方案。不会涉及复杂的Rx特性，阅读前对Rx有一些基本的了解即可。
 
-## 为什么状态管理这么重要
+# 为什么状态管理这么重要
 
 一个复杂的页面通常需要维护大量的变量来表示其运行期间的各种状态，在MVVM中页面大部分的状态和逻辑都通过ViewModel来维护，在常见的写法中ViewModel和视图之间通常用`Delegate`来通讯，比如说在数据改变的时候通知视图层更新UI等等：
 
@@ -18,11 +18,11 @@ Rx为我们隐藏了通知视图的过程，首先这样的好处是明显的：
 
 下面的介绍中所涉及的示例代码在：[https://github.com/L-Zephyr/MyDemos/tree/master/RxStateDemo](https://github.com/L-Zephyr/MyDemos/tree/master/RxStateDemo)。
 
-## Redux - ReSwift
+# Redux - ReSwift
 
 `Redux`是Facebook所提出的基于Flux改良的一种状态管理模式，在Swift中有一个名为[ReSwift](https://github.com/ReSwift/ReSwift)的开源项目实现了这个模式。
 
-### 双向绑定和单向绑定
+## 双向绑定和单向绑定
 
 要理解Redux首先要明白Redux是为了解决什么问题而生的，Redux为应用提供统一的状态管理，并实现了单向的数据流。所谓的`单向绑定`和`双向绑定`所描述的都是视图（View）和数据（Model）之间的关系：
 
@@ -80,7 +80,7 @@ extension NormalMessageViewController: UITableViewDataSource {
 
 虽然在这个例子中看起来非常简单，但是当页面比较复杂的时候UI操作和数据操作混杂在一起会让逻辑变得混乱。看到这里`单向绑定`的含义就很明显了，它去掉了`View -> Model`的这一层关系，视图层不能直接对数据进行修改，它只能通过某种机制向数据层传递事件，并在数据改变的时候刷新UI。
 
-### 实现
+## 实现
 
 为了构造单向数据流，Redux引入了一系列概念，这是Redux中所描述的数据流：
 
@@ -179,7 +179,7 @@ extension NormalMessageViewController: UITableViewDataSource {
 
 最后在视图中实现`StoreSubscriber`协议接收State改变的通知并更新UI即可。详细的代码请看Demo中的`Redux`文件夹。
 
-### 分析
+## 分析
 
 Redux将`View -> Model`这一层关系分解成了`View -> Action -> Store -> Model`，每一个模块只负责一件事情，数据始终沿着这条链路单向传递。
 
@@ -203,11 +203,11 @@ Redux将`View -> Model`这一层关系分解成了`View -> Action -> Store -> Mo
 
 综上所述，Redux模式虽然有许多优点，但它带来的成本也无法忽视。如果你的页面和交互极其复杂或是多个页面之间有大量的共享状态的话可以考虑Redux，但是对于大部分应用来说，Redux模式并不太适用。
 
-## Vuex - ReactorKit
+# Vuex - ReactorKit
 
 `Vue`也是近年来十分热门的前端框架之一，`Vuex`则是其专门为`Vue`提出的状态管理模式，在Redux之上进行了一些优化；而`ReactorKit`是一个Swift的开源库，它的一些设计理念与Vuex十分相似，所以这里我将它们放在一起来讲。
 
-### 实现
+## 实现
 
 与`ReSwift`不同的是`ReactorKit`的实现本身便于基于`RxSwift`，所以不必再考虑如何与Rx结合，下面是`ReactorKit`中数据的流程图：
 
@@ -341,7 +341,7 @@ func bind(reactor: MessageReactor) {
 
 这样的写法是更加FRP，一切都是事件流，但是实际用起来并不是那么完美。首先我们需要为用到的所有UI组件提供Rx扩展（上面的例子使用了RxViewController这个库）；其次这对reactor实例初始化的时机有更加严格的要求，因为`bind`方法是在reactor实例初始化的时候自动调用的，所以不能在`viewDidLoad`中初始化，否则会错过`viewDidLoad`事件。
 
-### 分析
+## 分析
 
 - **优点**：
   - 相比ReSwift简化了一些流程，并且以组件为单位来管理各自的状态，相比起来更容易在现有工程中引入；
@@ -349,7 +349,7 @@ func bind(reactor: MessageReactor) {
 - **缺点**：
   - 因为核心思想还是Redux模式，所以模板代码过多的问题还是无法避免；
 
-## 另一种简化方案
+# 另一种简化方案
 
 Redux模式对于大部分应用来说还是过于沉重了，而且Swift的语言特性也不像JavaScript那样灵活，很多样板代码无法避免。所以这里总结了另一套简化的方案，希望能在享受单向数据流优势的同时减轻使用者的负担。
 
@@ -389,7 +389,7 @@ public class Store<ConcreteState>: StoreType where ConcreteState: StateType {
 
 其中`StateType`是一个空协议，仅作为类型约束用；`Store`作为一个基类，负责保存组件的状态，以及管理状态更新的数据源，核心代码非常简单，下面来看一下实际应用。
 
-### ViewModel
+## ViewModel
 
 在实际开发中我让`ViewModel`来处理状态管理和变更的逻辑，再来实现一次上面的那个例子，将一个业务方的`ViewModel`分成三个部分：
 
@@ -510,7 +510,7 @@ class MessageViewModel: Store<MessageState> {
 
   我们之前已经将状态和UI完全分离开来了，所以在ViewModel的逻辑中只需要关心`state`中的状态即可，不需要关心与视图层的交互，所以以这种方式编写的代码同样也是十分清晰的。
 
-### View
+## View
 
 视图层需要实现一个名为`View`的协议，这里主要参考了`ReactorKit`中的设计：
 
@@ -554,7 +554,7 @@ public protocol View: class {
 
 在视图层中对于各种状态的绑定是很重要的一个环节，`View`协议存在的意义在于将视图层的事件绑定**规范化**，防止绑定操作的代码散落在各处降低可读性。
 
-### 数据流
+## 数据流
 
 按照以上流程实现的页面数据流如下：
 
@@ -584,6 +584,6 @@ public func performStateUpdate(_ updater: (inout State) -> Void) {
 
 如果你为所有`StateType`类型实现序列化和反序列化的操作，甚至可以实现类似[redux-devtools](https://github.com/reduxjs/redux-devtools)这样的`Time Travel`功能，这里就不再继续引申了。
 
-## 总结
+# 总结
 
 引入Rx模式需要多方面的考虑，本文仅针对状态管理这一点作了介绍，上面介绍的三种方案各有特点，最终的选择还是要结合项目的实际情况来判断。
