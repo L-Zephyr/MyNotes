@@ -40,7 +40,7 @@ ssh -p 2222 root@localhost
   rsync -rvz -e 'ssh -p 2222' --progress 本地文件 root@localhost:手机的目标位置
   ```
 
-- **从手机拷贝文件到Mac**
+  - **从手机拷贝文件到Mac**
 
   ```shell
   rsync -rvz -e 'ssh -p 2222' --progress root@localhost:手机上的目标文件 Mac上的目标位置
@@ -83,6 +83,45 @@ ssh -p 2222 root@localhost
 ### 重签名
 
 对于已经越狱的设备来说比较简单，可以使用`ldid`这样的工具直接对可执行文件进行签名，然后拷贝回设备覆盖原有的位置即可。对于非越狱设备来说则需要对ipa重签名之后再通过Xcode或iTools安装到设备上。
+
+## Mach-O
+
+`Mach-O`是iOS的可执行文件格式。一个`Mach-O`文件的格式如下：
+
+![Mach-O](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/iOS逆向开发/f474a709d055badf4b54c1d6f4b3ae16.png)
+
+大致分为四个部分：
+
+- **Mach Header：**
+
+  头部数据，包含了文件类型、CPU架构等等基本信息，可以使用命令`otool -h MachoFile`来查看；
+
+- **Load Commands：**
+
+  告诉操作系统如何加载文件中的数据，`Load Commands`开头会有四个`LC_SEGMENT`段：
+
+  ![Load Commands](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/iOS逆向开发/9be6bb0f190b004e8bceb649c9ea2fcd.png)
+
+  加载后会被映射到内存中，这里保存了程序各个段的偏移量等信息：
+
+  - `__PAGEZERO`：空指针陷阱段；
+  - `__TEXT`：代码段/只读数据段
+  - `__DATA`：读取和写入数据的段；
+  - `__LINKEDIT`：动态链接器所需要的重定位、绑定、懒加载等信息；
+
+  一个`段（Segment）`中会包含许多`节（Section）`，比如说`__DATA`段中有如下的节：
+
+  ![Section](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/iOS逆向开发/41d5893c2c78045888ee8354745eca05.png)
+
+  其中`__objc_classlist`这一节保存了程序中所有的类型，可以计算出各个类型的偏移量从而获得程序中的所有类型，`class-dump`正是基于这个原理来实现的；
+
+- **Section：**
+
+  `TEXT`和`DATA`的数据；
+
+- **其他数据：**
+
+  包含了符号表、字符串表、签名等信息；
 
 # 静态分析
 
@@ -567,7 +606,7 @@ restore-symbol TargetApp -o TargetApp_symbol
 
 ## Tweak
 
-`Tweak`是Theos提供的一种Hook第三方应用的一种方式，可以通过`Theos`的模板来快速创建：
+越狱开发中通过`Mobile Substrate`编写的第三方插件程序都称为`Tweak`，可以通过`Theos`的模板来快速创建：
 
 1. **创建一个Tweak模板：**
 
@@ -583,12 +622,12 @@ restore-symbol TargetApp -o TargetApp_symbol
 
    ```objective-c
    %hook BBPhoneUserLoginViewController // %hook 指定要hook的类型
-
+   
    - (void)loginAction:(id)button {
    	%log;
    	%orig;
    }
-
+   
    %end
    ```
 
@@ -605,7 +644,7 @@ restore-symbol TargetApp -o TargetApp_symbol
    ```makefile
    export THEOS_DEVICE_IP=localhost
    export THEOS_DEVICE_PORT=2222
-
+   
    include $(THEOS)/makefiles/common.mk
    ```
 
@@ -614,6 +653,24 @@ restore-symbol TargetApp -o TargetApp_symbol
 5. **查看日志**
 
    设备的日志可以通过`Console.app`应用查看，选择设备并通过进程名来筛选。
+
+## MonkeyDev
+
+`MonkeyDev`是一套Xcode模板和脚本的集合，只需要一个经过砸壳的IPA文件，就可以一键完成非越狱环境下的集成、开发、注入、重签名等步骤：
+
+1. 首先准备一个经过解密的IPA文件，放在TargetApp文件夹中，这个IPA文件会**作为一个资源文件**被拷贝到编译后的App目录中，就像这样：
+
+   ![Xcode创建的App](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/iOS逆向开发/c4239465d4a4556b31dac4df2d902ef7.png)
+
+   其中`mobileprovision`是我们自己的授权文件；
+
+2. `MonkeyDev`实现的关键在于一个脚本：
+
+   ![脚本](https://raw.githubusercontent.com/L-Zephyr/static_resource/master/Resources/iOS逆向开发/dd71da15048f68a279d91227ad8817a1.png)
+
+   这个脚本将我们自己提供的ipa文件中的应用的内容提取出来，覆盖Xcode编译生成的应用目录，`BundleID`也会改成我们自己的；
+
+3. 然后还是通过这个脚本进行重签名，使用的是我们的个人开发证书以及Xcode所生成的对应的`embedded.mobileprovision`配置文件，所以有效期只有7天；
 
 # 逆向实践
 
