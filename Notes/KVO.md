@@ -72,6 +72,8 @@ KVO是通过OC的Runtime来实现的，在第一次调用`addObserver`为一个�
    }
    ```
 
+   `objc_allocateClassPair`用来动态创建一个类型，这个函数还会创建它的**元类**，所以才叫做 “Pair”，通过`object_getClass(newClass)`可以获取到这个类型的元类。
+
 2. **实现class方法**
 
    上面创建类型的时候添加了一个`class`方法，它的`IMP`是一个C函数：
