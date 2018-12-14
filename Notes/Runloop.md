@@ -331,9 +331,9 @@ CFRunLoopAddSource(CFRunLoopGetCurrent(), self.source, kCFRunLoopCommonModes);
 当我们想要唤醒该线程的时候需要执行：
 
 ```objective-c
-// 1. 向自定义的source添加事件
+// 1. 将source标记为有事件未处理
 CFRunLoopSourceSignal(self.source);
-// 2. 唤醒线程处理事件(调用perform)
+// 2. 唤醒Runloop处理事件(调用perform)
 CFRunLoopWakeUp(self.runloop);
 ```
 
